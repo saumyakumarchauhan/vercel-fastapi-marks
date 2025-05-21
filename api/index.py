@@ -4,7 +4,7 @@ import json
 
 app = FastAPI()
 
-# Enable CORS
+# CORS settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,22 +26,21 @@ credits = {
     "CSP202": 1, "CSP204": 2, "CSP206": 1, "CSP210": 1, "OTP202": 2
 }
 
-# Load data.json
-with open("data.json") as f:
-    data = json.load(f)
+# Load the student data
+with open("data.json", "r") as f:
+    student_data = json.load(f)
 
 @app.get("/api")
-def get_student_data(name: str = Query(...)):
-    student_data = data.get(name)
-
-    if not student_data:
+def get_student_result(name: str = Query(...)):
+    entry = student_data.get(name)
+    if not entry:
         return {"error": "Student ID not found"}
 
-    # Calculate SGPA
     total_points = 0
     total_credits = 0
-    for subject, grade in student_data.items():
-        if subject == "SGPA" or grade == "":
+
+    for subject, grade in entry.items():
+        if subject == "SGPA" or not grade:
             continue
         point = grade_points.get(grade)
         if point is not None:
@@ -51,8 +50,9 @@ def get_student_data(name: str = Query(...)):
 
     sgpa = round(total_points / 25, 2) if total_credits == 25 else ""
 
-    student_data["SGPA"] = sgpa
+    # Return the original grades and the SGPA
     return {
         "Student ID": name,
-        "Grades": student_data
+        "Grades": entry,
+        "SGPA": sgpa
     }
